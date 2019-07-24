@@ -1,0 +1,44 @@
+{
+    "name": "scrap-favicon",
+    "version": "1.0.0",
+    "description": "Get favicon urls and its meta information as json",
+    "main": "index.js",
+    "license": "MIT",
+    "repository": "akanshgulati/scrap-favicon",
+    "author": {
+        "name": "Akansh Gulati",
+        "email": "me@akansh.com",
+        "url": "akansh.com"
+    },
+    "scripts": {
+        "test": "ava"
+    },
+    "engines": {
+        "node": ">=8"
+    },
+    "files": [
+        "index.js"
+    ],
+    "keywords": [
+        "scrap",
+        "favicon",
+        "fetch image",
+        "icons",
+        "meta",
+        "greedy",
+        "chunk"
+    ],
+    "dependencies": {
+        "cheerio": "^1.0.0-rc.3",
+        "cross-fetch": "^3.0.4",
+        "image-size": "^0.7.4"
+    },
+    "devDependencies": {
+        "ava": "2.1.0"
+    },
+    "ava": {
+        "files": [
+            "test/**/*"
+        ]
+    }
+}
