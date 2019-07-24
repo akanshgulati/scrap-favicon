@@ -4,7 +4,6 @@ import scrapFavicon from '..';
 test('basic', async function (t) {
     const value = await scrapFavicon('https://www.google.com');
     t.is(value.images.length, 1);
-    t.true(value.redirects.length > 0);
 });
 
 test('with redirects', async function (t) {
