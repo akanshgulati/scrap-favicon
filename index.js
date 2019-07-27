@@ -1,89 +1,90 @@
-const fetch = require('cross-fetch');
 const cheerio = require('cheerio');
 const sizeOf = require('image-size');
 const {performance} = require('perf_hooks');
-const url = require('url');
-
-var http = require('http');
-var https = require('https');
-
-const result = {};
-const redirects = [];
+const Url = require('url');
+const http = require('http');
+const https = require('https');
 
 const ERROR_ENUM = {
     MAX_REDIRECT: 'maxRedirect',
     UNKNOWN: 'unknown',
     URL_NOT_FOUND: 'urlNotFound',
-    IMPROPER_FORMAT: 'urlImproper'
+    IMPROPER_FORMAT: 'urlImproper',
+    TIMEOUT: 'timeout'
 };
 const ERROR_STATEMENT = {
     [ERROR_ENUM.MAX_REDIRECT]: 'Max redirect limit reached',
     [ERROR_ENUM.UNKNOWN]: 'Something went wrong, please contact developer',
     [ERROR_ENUM.URL_NOT_FOUND]: 'Url not found',
-    [ERROR_ENUM.IMPROPER_FORMAT]: 'Url must start with http or https'
-};
-let Debug = false;
-const log = function () {
-    if (!Debug) {
-        return;
-    }
-    console.log.apply(null, arguments);
+    [ERROR_ENUM.IMPROPER_FORMAT]: 'Url must start with http or https',
+    [ERROR_ENUM.TIMEOUT]: 'Request timeout'
 };
 
 function error(statement) {
-    throw new Error(statement);
+    return new Error(statement);
 }
-
 
 function getDefaultFaviconUrls(baseUrl) {
     const defaultURL = [combineURLs(baseUrl, '/favicon.ico'), combineURLs(baseUrl, '/apple-touch-icon.png')];
     return defaultURL.map(url => ({url: url, scrapped: false}));
 }
 
-function getHTML(url, config) {
+function scrapWebsite(url, config, redirects = []) {
     let localStartTime = performance.now();
     let localEndTime;
+    const parsedUrl = parseUrl(url);
+    let isTimeout = false;
+    // parsedUrl.rejectUnauthorized = false;
+    const Client = getClient(parsedUrl.protocol);
+    return new Promise((resolve, reject) => {
 
-    return fetch(url, {mode: 'no-cors', redirect: 'manual', timeout: config.timeout}).then(response => {
-            // in case of redirect
-            if (response.status === 301 || response.status === 302) {
+        const req = Client.get(parsedUrl, resp => {
+            if (resp.statusCode === 301 || resp.statusCode === 302) {
                 // adding to redirect
                 localEndTime = performance.now();
-                const redirectedURL = response.headers.get('location');
-                redirects.push({url: redirectedURL, timeTaken: localEndTime - localStartTime});
+                const redirectedUrl = resp.headers['location'];
+                redirects.push({url: redirectedUrl, timeTaken: localEndTime - localStartTime});
 
-                const redirectCount = Object.keys(redirects);
+                const redirectCount = redirects.length;
 
-                if (redirectCount < config.maxRedirect) {
-                    return getHTML(redirectedURL, config);
+                if (redirectCount <= config.maxRedirect) {
+                    resolve(scrapWebsite(redirectedUrl, config, redirects));
                 } else {
-                    error(ERROR_STATEMENT[ERROR_ENUM.MAX_REDIRECT]);
+                    reject(error(ERROR_STATEMENT[ERROR_ENUM.MAX_REDIRECT]));
                 }
+                return;
             }
 
-            if (response.ok) {
-                result.redirects = redirects;
-                return response.text().then(_resp => {
-                    return {
-                        html: _resp,
-                        url: response.url
-                    }
-                });
-            }
+            let responseData = '';
+            // A chunk of data has been received.
+            resp.on('data', (chunk) => {
+                responseData += chunk;
+            });
 
-            // in case it is not captured by any case above
-            if (!response.ok) {
-                return error(ERROR_STATEMENT[ERROR_ENUM.UNKNOWN]);
+            // The whole response has been received. Print out the result.
+            resp.on('end', () => {
+                resolve({
+                    html: responseData,
+                    url: url,
+                    redirects
+                })
+            });
+        });
+
+        req.on('error', e => {
+            if (isTimeout) {
+                reject(error(ERROR_STATEMENT[ERROR_ENUM.TIMEOUT]));
+                return;
             }
-        }
-    );
+            reject(e);
+        });
+        // Handling timeout of the request
+        req.setTimeout(config.timeout, () => {
+            isTimeout = true;
+            req.destroy();
+        });
+    });
 }
-
-const config = {
-    maxRedirect: 10,
-    timeout: 100000,
-    maxSize: 1000000
-};
 
 
 function isValidURL(string) {
@@ -106,7 +107,6 @@ function extractFavicons(query, baseUrl) {
     favicon.each((index, $el) => {
         let url = query($el).attr('href');
         const validity = isValidURL(url);
-        log("isValid", validity);
         if (validity.isValid) {
             if (!validity.isAbsolute) {
                 url = combineURLs(baseUrl, url)
@@ -120,11 +120,9 @@ function extractFavicons(query, baseUrl) {
 function extractAppleIcons(query, baseUrl) {
     const urls = [];
     const favicon = query("link[rel='apple-touch-icon']");
-    log("favicon", favicon.length);
     favicon.each((index, $el) => {
         let url = query($el).attr('href');
         const validity = isValidURL(url);
-        log("isValid", validity);
         if (validity.isValid) {
             if (!validity.isAbsolute) {
                 url = combineURLs(baseUrl, url)
@@ -141,17 +139,13 @@ function extractIcons(query, baseUrl, config) {
     const urlsInfo = [...extractAppleIcons(query, baseUrl), ...extractFavicons(query, baseUrl), ...defaultFavicons];
     const filteredUrlInfo = urlsInfo.filter((info, index) => urlsInfo.findIndex(_info => _info.url === info.url) === index);
 
-    log('All urls -> ', filteredUrlInfo);
-
     if (!config.urlsOnly) {
         return fetchImagesSize(filteredUrlInfo).then(images => {
-            result.images = images.filter(image => !(image.error && !image.scrapped));
-            return result;
+            return images.filter(image => !(image.error && !image.scrapped));
         });
     } else {
         return checkDefaultImages(filteredUrlInfo).then(images => {
-            result.images = images.filter(image => image.success);
-            return result;
+            return images.filter(image => image.success);
         });
     }
 }
@@ -163,11 +157,9 @@ function checkDefaultImages(imagesInfo) {
         imagesInfo.forEach(info => {
             if (!info.scrapped) {
                 checkImage(info.url).then(response => {
-                    log("response", response);
                     Object.assign(info, {success: response});
                     count++;
                     if (count === imagesInfo.length) {
-                        log("Result", imagesInfo);
                         resolve(imagesInfo);
                     }
                 });
@@ -189,18 +181,15 @@ function fetchImagesSize(imagesInfo) {
         imagesInfo.forEach(info => {
             getImageSizeFromChunk(info.url)
                 .then(response => {
-                    log("response", response);
                     Object.assign(info, response, {success: true});
                     count++;
                     if (count === imagesInfo.length) {
-                        log("Result", imagesInfo);
                         resolve(imagesInfo);
                     }
                 }).catch(err => {
                 Object.assign(info, {success: false, error: err.message});
                 count++;
                 if (count === imagesInfo.length) {
-                    log("Result", imagesInfo);
                     resolve(imagesInfo);
                 }
             });
@@ -218,7 +207,7 @@ function getClient(protocol) {
 
 function parseUrl(urlString) {
     try {
-        return url.parse(urlString);
+        return Url.parse(urlString);
     } catch (error) {
         throw error;
     }
@@ -248,7 +237,6 @@ function checkImage(imgUrl) {
 }
 
 function getImageSizeFromChunk(imgUrl) {
-    log("imageURL", imgUrl);
 
     return new Promise((resolve, reject) => {
 
@@ -294,28 +282,32 @@ function getDefaultConfig() {
     return {
         maxRedirect: 10,
         timeout: 100000,
-        debug: false,
         urlsOnly: false
     }
 }
 
 function init(url, config = {}) {
-    Debug = config.debug;
+    const result = {};
     let globalStartTime = performance.now();
 
     if (!url) {
-        error(ERROR_ENUM.URL_NOT_FOUND);
+        error(ERROR_STATEMENT[ERROR_ENUM.URL_NOT_FOUND]);
     }
     config = Object.assign(getDefaultConfig(), config);
 
-    return getHTML(url, config).then(data => {
-        const query = cheerio.load(data.html);
-        return extractIcons(query, data.url, config).then(result => {
-            let globalEndTime = performance.now();
+    return scrapWebsite(url, config).then(scrapInfo => {
+
+        const query = cheerio.load(scrapInfo.html);
+
+        return extractIcons(query, scrapInfo.url, config).then(images => {
+            const globalEndTime = performance.now();
+
             result.timeTaken = globalEndTime - globalStartTime;
+            result.redirects = scrapInfo.redirects;
+            result.images = images;
             return result;
         });
     });
 }
 
-module.exports = init; 
+module.exports = init;
