@@ -1,5 +1,5 @@
 Get favicons list from a website
-# scrap-favicon [![Build Status](https://travis-ci.org/akanshgulati/scrap-favicon.svg?branch=master)](https://travis-ci.org/akanshgulati/scrap-favicon)
+# scrap-favicon [![Build Status](https://travis-ci.org/akanshgulati/scrap-favicon.svg?branch=master)](https://travis-ci.org/akanshgulati/scrap-favicon) [![npm version](https://badge.fury.io/js/scrap-favicon.svg)](https://badge.fury.io/js/scrap-favicon)
 
 > Get favicon urls without downloading it along with its meta information using [`scrap-favicon`](https://github.com/akanshgulati/scrap-favicon)
 
@@ -37,7 +37,7 @@ scrapFavicon('https://akansh.com', {
     maxRedirect: 2
 }).then(resp => console.log(resp), err => console.error(err));
 ```
-You can check examples [here](https://github.com/akanshgulati/scrap-favicon/blob/master/example/example.js)
+You can check examples [here](https://github.com/akanshgulati/scrap-favicon/blob/master/example/example.js).
 
 ## API
 
