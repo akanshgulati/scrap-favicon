@@ -1,8 +1,15 @@
 Get favicons list from a website
 # scrap-favicon [![Build Status](https://travis-ci.org/akanshgulati/scrap-favicon.svg?branch=master)](https://travis-ci.org/akanshgulati/scrap-favicon)
 
-> Get favicon urls along with its meta information using [`scrap-favicon`](https://github.com/akanshgulati/scrap-favicon)
+> Get favicon urls without downloading it along with its meta information using [`scrap-favicon`](https://github.com/akanshgulati/scrap-favicon)
 
+## Introduction
+The main aim of this package is to greedily fetch/scrap all the favicons and their dimensions without downloading it completely. (a few chunks can give correct dimensions).
+
+1. This package scraps/fetch the favicon from the website in two steps: 
+    1. Check the meta information declared.
+    2. Add default favicon url (`/favicon.ico` & `/apple-touch-icon.png`) and check if resource present.
+2. Download each url in chunks just to obtain favicon dimensions information using `image-size` package. 
 
 ## Install
 
@@ -29,9 +36,8 @@ scrapFavicon('https://akansh.com', {
     timeout: 10000,
     maxRedirect: 2
 }).then(resp => console.log(resp), err => console.error(err));
-
 ```
-
+You can check examples [here](https://github.com/akanshgulati/scrap-favicon/blob/master/example/example.js)
 
 ## API
 

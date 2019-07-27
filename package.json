@@ -1,6 +1,6 @@
 {
     "name": "scrap-favicon",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "Get favicon urls and its meta information as json",
     "main": "index.js",
     "license": "MIT",
@@ -26,11 +26,16 @@
         "icons",
         "meta",
         "greedy",
-        "chunk"
+        "curl",
+        "retrieve",
+        "get",
+        "png",
+        "jpeg",
+        "ico",
+        "gif"
     ],
     "dependencies": {
         "cheerio": "^1.0.0-rc.3",
-        "cross-fetch": "^3.0.4",
         "image-size": "^0.7.4"
     },
     "devDependencies": {
