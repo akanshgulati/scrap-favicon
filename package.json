@@ -39,7 +39,7 @@
         "image-size": "^0.7.4"
     },
     "devDependencies": {
-        "ava": "2.1.0"
+        "ava": "3.13.0"
     },
     "ava": {
         "files": [

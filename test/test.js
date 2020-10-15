@@ -1,5 +1,5 @@
-import test from 'ava';
-import scrapFavicon from '..';
+const test = require('ava');
+const scrapFavicon = require('..');
 
 test('basic', async function (t) {
     const value = await scrapFavicon('https://www.google.com');
