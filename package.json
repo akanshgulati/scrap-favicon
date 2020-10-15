@@ -1,6 +1,6 @@
 {
     "name": "scrap-favicon",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "description": "Get favicon urls and its meta information as json",
     "main": "index.js",
     "license": "MIT",
