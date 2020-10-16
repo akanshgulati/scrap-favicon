@@ -14,7 +14,7 @@
         "test": "ava"
     },
     "engines": {
-        "node": ">=8"
+        "node": ">=10.18.0 <11 || >=12.14.0 <13"
     },
     "files": [
         "index.js"
@@ -36,7 +36,7 @@
     ],
     "dependencies": {
         "cheerio": "^1.0.0-rc.3",
-        "image-size": "^0.7.4"
+        "image-size": "^0.9.1"
     },
     "devDependencies": {
         "ava": "3.13.0"
