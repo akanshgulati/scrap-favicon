@@ -88,7 +88,7 @@ function scrapWebsite(url, config, redirects = []) {
 
 
 function isValidURL(string) {
-    const isValid = string.match(/(https?:\/\/)?[a-zA-z\d].+(png|ico|jpeg|jpg|webp|gif)$/i);
+    const isValid = string.match(/(https?:\/\/)?[a-zA-z\d].+(png|ico|jpeg|jpg|webp|gif)(\?.*)?$/i);
     return {
         isValid: !!isValid,
         isAbsolute: isValid && !!isValid[1]
