@@ -2,17 +2,16 @@ const cheerio = require('cheerio');
 const sizeOf = require('image-size');
 const {performance} = require('perf_hooks');
 const Url = require('url');
+const followRedirects = require('follow-redirects');
 const { http, https } = require('follow-redirects');
 
 const ERROR_ENUM = {
-    MAX_REDIRECT: 'maxRedirect',
     UNKNOWN: 'unknown',
     URL_NOT_FOUND: 'urlNotFound',
     IMPROPER_FORMAT: 'urlImproper',
     TIMEOUT: 'timeout'
 };
 const ERROR_STATEMENT = {
-    [ERROR_ENUM.MAX_REDIRECT]: 'Max redirect limit reached',
     [ERROR_ENUM.UNKNOWN]: 'Something went wrong, please contact developer',
     [ERROR_ENUM.URL_NOT_FOUND]: 'Url not found',
     [ERROR_ENUM.IMPROPER_FORMAT]: 'Url must start with http or https',
@@ -28,7 +27,7 @@ function getDefaultFaviconUrls(baseUrl) {
     return defaultURL.map(url => ({url: url, scrapped: false}));
 }
 
-function scrapWebsite(url, config, redirects = []) {
+function scrapWebsite(url, config) {
     let localStartTime = performance.now();
     let localEndTime;
     const parsedUrl = parseUrl(url);
@@ -38,22 +37,6 @@ function scrapWebsite(url, config, redirects = []) {
     return new Promise((resolve, reject) => {
 
         const req = Client.get(parsedUrl, resp => {
-            if (resp.statusCode === 301 || resp.statusCode === 302) {
-                // adding to redirect
-                localEndTime = performance.now();
-                const redirectedUrl = resp.headers['location'];
-                redirects.push({url: redirectedUrl, timeTaken: localEndTime - localStartTime});
-
-                const redirectCount = redirects.length;
-
-                if (redirectCount <= config.maxRedirect) {
-                    resolve(scrapWebsite(redirectedUrl, config, redirects));
-                } else {
-                    reject(error(ERROR_STATEMENT[ERROR_ENUM.MAX_REDIRECT]));
-                }
-                return;
-            }
-
             let responseData = '';
             // A chunk of data has been received.
             resp.on('data', (chunk) => {
@@ -64,8 +47,7 @@ function scrapWebsite(url, config, redirects = []) {
             resp.on('end', () => {
                 resolve({
                     html: responseData,
-                    url: url,
-                    redirects
+                    url: url
                 })
             });
         });
@@ -279,7 +261,7 @@ function getImageSizeFromChunk(imgUrl) {
 
 function getDefaultConfig() {
     return {
-        maxRedirect: 10,
+        maxRedirects: 10,
         timeout: 100000,
         urlsOnly: false
     }
@@ -293,6 +275,7 @@ function init(url, config = {}) {
         error(ERROR_STATEMENT[ERROR_ENUM.URL_NOT_FOUND]);
     }
     config = Object.assign(getDefaultConfig(), config);
+    followRedirects.maxRedirects = config.maxRedirects;
 
     return scrapWebsite(url, config).then(scrapInfo => {
 
@@ -302,7 +285,6 @@ function init(url, config = {}) {
             const globalEndTime = performance.now();
 
             result.timeTaken = globalEndTime - globalStartTime;
-            result.redirects = scrapInfo.redirects;
             result.images = images;
             return result;
         });
