@@ -103,7 +103,7 @@ function combineURLs(baseURL, relativeURL) {
 
 function extractFavicons(query, baseUrl) {
     const urls = [];
-    const favicon = query("link[rel='icon'], link[rel='shortcut icon'], link[rel='alternate icon']");
+    const favicon = query("link[rel='icon' i], link[rel='shortcut icon' i], link[rel='alternate icon' i]");
     favicon.each((index, $el) => {
         let url = query($el).attr('href');
         const validity = isValidURL(url);
