@@ -36,6 +36,7 @@
     ],
     "dependencies": {
         "cheerio": "^1.0.0-rc.3",
+        "follow-redirects": "^1.13.1",
         "image-size": "^0.9.1"
     },
     "devDependencies": {
