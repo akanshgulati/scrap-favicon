@@ -2,8 +2,7 @@ const cheerio = require('cheerio');
 const sizeOf = require('image-size');
 const {performance} = require('perf_hooks');
 const Url = require('url');
-const http = require('http');
-const https = require('https');
+const { http, https } = require('follow-redirects');
 
 const ERROR_ENUM = {
     MAX_REDIRECT: 'maxRedirect',
